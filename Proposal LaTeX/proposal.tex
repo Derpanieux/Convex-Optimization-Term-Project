@@ -1,0 +1,57 @@
+\documentclass[12pt, letterpaper]{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{geometry}
+\usepackage{minted}
+\usepackage{hyperref}
+\usepackage{mathtools}
+\usepackage{enumitem}
+\usepackage{amssymb}
+\usepackage{float}
+
+\geometry{letterpaper, margin = 1in}
+
+\DeclareMathOperator{\dom}{dom}
+
+\title{Convex Optimization 16:332:509 \\
+Term Project\\
+Subgradient Methods Applied to LASSO Regression
+}
+
+\author{Kasey Tian}
+\date{\today}
+
+
+\begin{document}
+\maketitle
+\section{Team Members}
+This project will be completed as a solo endeavor, by myself, Kasey Tian.
+\section{Scope}
+This project will explore subgradient methods in convex optimization problems. Then these methods will be applied to a practical problem, training a LASSO linear regression model to predict life expectancy from various factors using World Health Organization (WHO) data. 
+
+\subsection{Subgradient Methods}
+First, research will be done into the nature of subgradients and subgradient methods. This will involve a proof of convergent behavior. After the nature of the algorithm is understood I will implement subgradient methods in Python. Particularly, I would like to implement a number of different step size choosing methods as well as the basic algorithm. Subgradient methods will be drawn primarily from \cite{subgradient}, along with supplementary sources \cite{subgradient2}, \cite{subgradient3}, and \cite{both}.
+
+\subsection{LASSO regression}
+In order to apply subgradient methods in a real world application, I will train a LASSO linear regression model, which is not fully differentiable. This makes it a suitable candidate for using subgradient methods as opposed to more common gradient descent methods. The LASSO method will be drawn primarily from \cite{lasso}, supplemented by \cite{both}. 
+
+\subsection{Application}
+Linear regression is one of the primary applications of the LASSO method, so predicting life expectancy from other factors should be a task it is well suited for. I will be utilizing a data set from WHO \cite{dataset} to train and test my resulting model.
+
+\begin{thebibliography}{9}
+
+    \bibitem{subgradient} S. Boyd and J. Park, "Subgradient Methods", 2014, Available: \url{https://web.stanford.edu/class/ee364b/lectures/subgrad_method_notes.pdf}
+
+    \bibitem{subgradient2} S. Boyd, L. Xiao, A. Mutapcic, "Subgradient Methods", 2003, Available: \url{https://web.mit.edu/6.976/www/notes/subgrad_method.pdf}
+
+    \bibitem{subgradient3} W.-K. Ma, "Subgradient Methods", Available: \url{http://dsp.ee.cuhk.edu.hk/eleg5481/Lecture%20notes/14-%20subgradient/subgrad.pdf}
+
+    \bibitem{both} M. Gormley, "Lecture 10: Subgradients / The Subgradient Method", 2023, Available: \url{https://www.cs.cmu.edu/~mgormley/courses/10425/slides/lecture10-subgrad.pdf}
+
+    \bibitem{lasso} R. Tibshirani, "Regression Shrinkage and Selection via the Lasso", \textit{Journal of the Royal Statistical Society}, vol. 59, iss. 1, pg. 267-288, 1996, Available: \url{doi.org/10.1111/j.2517-6161.1996.tb02080.x}
+
+    \bibitem{dataset} KUMARRAJARASHI, "Life Expectancy (WHO)", Available: \url{https://www.kaggle.com/datasets/kumarajarshi/life-expectancy-who/data}
+
+
+\end{thebibliography}
+
+\end{document}
