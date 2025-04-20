@@ -40,21 +40,27 @@ optimization, subgradients, LASSO, regression
 \end{IEEEkeywords}
 
 \section{Introduction}\label{sec:intro}
-Subgradient methods are a way to perform an optimization on an objective function which is not fully differentiable. For non-differentiable objective functions, traditional methods, such as gradient descent and Newton's method, are impossible to execute. They can also be combined with a wide variety of other optimization methods, and have far reaching applications. They were originally developed by Shor and others in the Soviet Union in the 1960s and 70s \cite{boydparksubgradients} \cite{boydxiaosubgradients}. LASSO regression is a regression analysis method which was first introduced in 1986 \cite{lassooriginal} in the field of geophysics, but was then independently rediscovered, named, and popularized in 1996 by Tibshirani \cite{lassopaper}. It is characterized by regularization using the \(L_1\) norm, which involves the absolute value function and is therefore not fully differentiable. This makes it a prime candidate for applying subgradient methods.
+Subgradient methods are a way to perform an optimization on an objective function which is not fully differentiable. For non-differentiable objective functions, traditional methods, such as gradient descent and Newton's method, are impossible to execute. They can also be combined with a wide variety of other optimization methods, and have far reaching applications. They were originally developed by Shor and others in the Soviet Union in the 1960s and 70s \cite{boydparksubgradients} \cite{boydxiaosubgradients}. LASSO regression is a regression analysis method which was first introduced in 1986 \cite{lassooriginal} in the field of geophysics, but was then independently rediscovered, named, and popularized in 1996 by Tibshirani \cite{lassopaper}. It is characterized by regularization using the \(L_1\) norm, which involves the absolute value function and is therefore not fully differentiable. This makes it a prime candidate for applying subgradient methods. To demonstrate a practical implementation LASSO regression will be used with a linear classifier to predict life expectancy from World Health Organization (WHO) data.
 
 
 \section{Mathematical Basis}\label{sec:math}
 In this section we will explore the mathematics of subgradients, subgradient methods and LASSO regression.
 \subsection{Subgradient}\label{sec:math subgrad}
+This section is mostly adapted from \cite{boydvandenberghesubgradient}, with some supplementary material from \cite{boydparksubgradients}.
 \subsubsection{Definitions}
 A subgradient is defined for some convex function \(f: \mathbb{R}^n \rightarrow \mathbb{R}\) at a point \(x \in \dom f\) as a vector \(g \in \mathbb{R}^n\) such that \(\forall y \in \dom f\)
 \begin{equation}\label{eq:subgradient def}
 f(y) \geq f(x) + g^T (y-x) 
 \end{equation}
+Alternately expressed as
+\begin{equation}\label{eq:modified subgradient def}
+    f(x) - f(y) + g^T(y-x) \leq 0
+\end{equation}
 There can be multiple subgradients at a point \(x\), so we will also define the subdifferential \(\partial f(x)\) to be the set of all subgradients at \(x\).
 \begin{equation}\label{eq:math subdifferential}
-\partial f(x) = \left\{ g : f(y) \geq f(x) + g^T (y-x)\right\}
+\partial f(x) = \bigcap_{y \in \dom f} \left\{ g : f(y) \geq f(x) + g^T (y-x)\right\}
 \end{equation}
+If there exists at least one subgradient at a point \(x\), we would say \(f\) is subdifferentiable at \(x\). If all points in the domain are subdifferentiable, we say that \(f\) is subdifferentiable.
 
 \subsubsection{Example: Absolute Value}
 If we consider \(g\) in \eqref{eq:subgradient def} to be a slope, we can visualize a subgradient as being some hyperplane intersecting our function at \(x\) for which all values of the function are on or above the plane. 
@@ -66,12 +72,12 @@ Let us employ this intuition to find a subgradient of the function \(f(x) = |x|\
     \caption{Absolute value function (blue) with subgradients (red)}
     \label{fig:abs subgradients}
 \end{figure}
-In fact, we can say that any \(g \in [-1,1]\) would be a subgradient, and therefore \(\partial f(0) = [-1,1]\). But what about other points? For a point \(x > 0\), we can surmise that the only possible \(g = 1\), as any other value will leave some parts of our function beneath the resulting plane. Likewise for \(x < 0\), \(g = -1\). Thus we can write
+In fact, we can say that any \(g \in [-1,1]\) would be a subgradient, and therefore \(\partial f(0) = [-1,1]\). But what about other points? For a point \(x > 0\), we can surmise that the only possible \(g = 1\), as any other value will leave some parts of our function beneath the resulting plane. Likewise for \(x < 0\), \(g = -1\). Using \eqref{eq:math subdifferential}, we can say
 \begin{equation}\label{eq:abs subdifferential}
 \partial f(x) = \begin{cases}
-    -1 & x < 0 \\
+    \{-1\} & x < 0 \\
     [-1, 1] & x = 0\\
-    1 & x > 0
+    \{1\} & x > 0
 \end{cases}
 \end{equation}
 This can be compared against the derivative of \(f(x)\).
@@ -88,12 +94,12 @@ a = \lim_{y \rightarrow x^-} \frac{f(y)-f(x)}{y-x}
 \begin{equation}\label{eq:subdifferential b def}
 b = \lim_{y \rightarrow x^+} \frac{f(y)-f(x)}{y-x}
 \end{equation}
-for one dimensional functions. We can note that this set is convex, which will hold true for all subdifferentials. Furthermore, we can find the boundaries of this set using limits neae our non-differentiable points.
+for one dimensional functions. We can note that for differentiable points \(a = b\), so this definition satisfies our observation up to this point.
 
 \subsubsection{Properties}
-There are a few important properties that we shall take note of.
+There are a few important properties that we shall take note of. Proofs of these properties can be found in Appendix \ref{sec:subgradient properties proofs}.
 \begin{enumerate}
-    \item If the function is differentiable at \(x\), the only member of \(\partial f(x)\) will be the gradient
+    \item If the function is differentiable at \(x\), \(\partial f(x) = \{\nabla f(x)\}\)
     \item If \(x^*\) is a global minimum, \(\partial f(x^*)\) must contain the zero vector
     \item \(\partial f(x)\) will always be a convex set
 \end{enumerate}
@@ -126,10 +132,65 @@ There are a few different methods of choosing the step size \(\alpha^{(k)}\)
 
 \appendix
 \subsection{Subgradient Properties}\label{sec:subgradient properties proofs}
-\subsubsection{}
+\subsubsection{When the Function is Differentiable}
+We can begin by supposing that \(f\) is differentiable at \(x\), and therefore \(\nabla f(x)\) exists. Let us write a definition for each of its elements
+\begin{equation}\label{eq:gradient elementwise def}
+    \nabla f_i(x) = \lim_{y \rightarrow x} \frac{f(y)-f(x)}{y_i-x_i}
+\end{equation}
+And let us also rewrite \eqref{eq:modified subgradient def} with an elementwise sum
+\begin{equation}\label{eq:subgradient elementwise sum}
+f(x) - f(y)+ \sum^{n}_{i=1} g^T_i(y_i-x_i) \leq 0
+\end{equation}
+We can combine \eqref{eq:gradient elementwise def} and \eqref{eq:subgradient elementwise sum}
+\begin{equation}
+\lim_{y \rightarrow x} f(x) - f(y)+ \sum^{n}_{i=1} \nabla f_i(x)^T(y_i-x_i) \leq 0
+\end{equation}
+Substitute and simplify and we find that
+\begin{equation}
+\lim_{y \rightarrow x} f(x) - f(y)+ \sum^{n}_{i=1} \nabla f_i(x)^T(y_i-x_i) = 0
+\end{equation}
+If we are interested in trying an alternate \(g \neq \nabla f_i(x)\), we can say that a particular \(g_i\) would be invalid if
+\begin{equation}\label{eq:differentiable cookie}
+g_i(y_i-x_i) > \nabla f_i(x)(y_i-x_i)
+\end{equation}
+If \(g_i > \nabla f_i(x)\) and \(y_i > x_i\), this condition is fulfilled and therefore no values of \(g_i > \nabla f_i(x)\) are valid. Likewise, if \(g_i < \nabla f_i(x)\) and \(y_i < x_i\) this condition is fulfilled and therefore no values of \(g_i < \nabla f_i(x)\) are valid. Therefore the only valid values for every \(g_i = \nabla f_i(x)\), so the only valid \(g = \nabla f(x)\) if \(\nabla f(x)\) exists.
 
-\subsection{Second Appendix}
-ha ha ha
+
+\iffalse
+We can begin by supposing that \(f\) is differentiable at \(x\), and therefore \(\nabla f(x)\) exists. We can also remember that \(f(x)\) is convex, and therefore \(\forall \theta \in [0,1]\) and \(x, y \in \dom f\)
+\begin{equation}\label{eq:convexity def}
+f(\theta x + (1-\theta)y) \leq \theta f(x) + (1-\theta) f(y)
+\end{equation}
+Working from \eqref{eq:subgradient def}, if \(\nabla f(x)\) is a subgradient it must be true that \(\forall y \in \dom f\)
+\begin{equation}
+f(y) \geq f(x) + \nabla f(x)^T (y-x)
+\end{equation}
+If we take 
+\fi
+\iffalse
+We can algebraically find
+\begin{equation}
+\frac{f(y) - f(x)}{y-x} \geq \nabla f(x)
+\end{equation}
+We can remember the definition of the gradient using a limit
+\begin{equation}
+\nabla f(x) = \lim_{z \rightarrow x} \frac{f(z)-f(x)}{z-x}
+\end{equation}
+\fi
+
+\subsubsection{Global Minimum}
+If \(x^*\) is a global minimum it must be true that \(\forall y \in \dom f\)
+\begin{equation}\label{eq:global min def}
+f(x^*) \leq f(y)
+\end{equation}
+If we have \(g\) equal to the zero vector in \eqref{eq:subgradient def}, we end up removing the second term, so we end up with
+\begin{equation}\label{eq:zero vector subgradient}
+f(y) \geq f(x)
+\end{equation}
+We can trivially redefine \(x = x^*\) to derive \eqref{eq:global min def}. Therefore \(x^*\) is optimal if and only if the zero vecctor is included in its subdifferential.
+
+\subsubsection{Convexity}
+We can view \eqref{eq:modified subgradient def} as defining a halfspace in terms of \(x, y, f\). From \eqref{eq:math subdifferential} we can see that \(\partial f(x)\) is composed of intersections of these halfspaces. Since halfspaces are always convex and the intersection of convex sets is always convex, \(\partial f(x)\) must be a convex set.
 
 \bibliographystyle{IEEEtran}
 \bibliography{refs}
