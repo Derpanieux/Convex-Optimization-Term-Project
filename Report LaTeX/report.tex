@@ -1,4 +1,4 @@
-\documentclass[conference]{IEEEtran}
+\documentclass[journal,onecolumn]{IEEEtran}
 
 \usepackage{graphicx} % Required for inserting images
 \usepackage{geometry}
@@ -43,9 +43,9 @@ optimization, subgradients, LASSO, regression
 Subgradient methods are a way to perform an optimization on an objective function which is not fully differentiable. For non-differentiable objective functions, traditional methods, such as gradient descent and Newton's method, are impossible to execute. They can also be combined with a wide variety of other optimization methods, and have far reaching applications. They were originally developed by Shor and others in the Soviet Union in the 1960s and 70s \cite{boydparksubgradients} \cite{boydxiaosubgradients}. LASSO regression is a regression analysis method which was first introduced in 1986 \cite{lassooriginal} in the field of geophysics, but was then independently rediscovered, named, and popularized in 1996 by Tibshirani \cite{lassopaper}. It is characterized by regularization using the \(L_1\) norm, which involves the absolute value function and is therefore not fully differentiable. This makes it a prime candidate for applying subgradient methods. To demonstrate a practical implementation LASSO regression will be used with a linear classifier to predict life expectancy from World Health Organization (WHO) data.
 
 
-\section{Mathematical Basis}\label{sec:math}
+\section{Mathematical Analysis}\label{sec:math}
 In this section we will explore the mathematics of subgradients, subgradient methods and LASSO regression.
-\subsection{Subgradient}\label{sec:math subgrad}
+\subsection{Defining Subgradient}\label{sec:math subgrad}
 This section is mostly adapted from \cite{boydvandenberghesubgradient}, with some supplementary material from \cite{boydparksubgradients}.
 \subsubsection{Definitions}
 A subgradient is defined for some convex function \(f: \mathbb{R}^n \rightarrow \mathbb{R}\) at a point \(x \in \dom f\) as a vector \(g \in \mathbb{R}^n\) such that \(\forall y \in \dom f\)
@@ -53,6 +53,9 @@ A subgradient is defined for some convex function \(f: \mathbb{R}^n \rightarrow 
 f(y) \geq f(x) + g^T (y-x) 
 \end{equation}
 Alternately expressed as
+\begin{equation}\label{eq:modified subradient def 2}
+    f(y) - f(x) \geq g^T(y-x)
+\end{equation}
 \begin{equation}\label{eq:modified subgradient def}
     f(x) - f(y) + g^T(y-x) \leq 0
 \end{equation}
@@ -68,7 +71,7 @@ If we consider \(g\) in \eqref{eq:subgradient def} to be a slope, we can visuali
 Let us employ this intuition to find a subgradient of the function \(f(x) = |x|\) at the point \(x=0\). Graphically, we can see in Fig. \ref{fig:abs subgradients} that many different lines satisfy this criteron.
 \begin{figure}[tbp]
     \centering
-    \includegraphics[width=\linewidth]{Figures/abs_subgradients.png}
+    \includegraphics[width=0.5\linewidth]{Figures/abs_subgradients.png}
     \caption{Absolute value function (blue) with subgradients (red)}
     \label{fig:abs subgradients}
 \end{figure}
@@ -98,29 +101,81 @@ for one dimensional functions. We can note that for differentiable points \(a = 
 
 \subsubsection{Properties}
 There are a few important properties that we shall take note of. Proofs of these properties can be found in Appendix \ref{sec:subgradient properties proofs}.
-\begin{enumerate}
-    \item If the function is differentiable at \(x\), \(\partial f(x) = \{\nabla f(x)\}\)
-    \item If \(x^*\) is a global minimum, \(\partial f(x^*)\) must contain the zero vector
+\begin{itemize}
+    \item If and only if the function is differentiable at \(x\), \(\partial f(x) = \{\nabla f(x)\}\)
+    \item If and only if \(x^*\) is a global minimum, \(0 \in \partial f(x^*)\)
     \item \(\partial f(x)\) will always be a convex set
-\end{enumerate}
+\end{itemize}
 
-\subsection{Subgradient Methods}
+\subsection{Subgradient Methods}\label{sec:subgradient methods}
+This section is predominantly adapted from \cite{boydparksubgradients} and \cite{boydxiaosubgradients}.
+
 \subsubsection{Iteration Step}
 Subgradient methods are a family of optimization techniques involving the same basic iteration step
-\begin{equation}\label{eq: subgradient method iteration}
-x^{(k+1)} = x^{(k)} - \alpha^{(k)}g^{(k)}
+\begin{equation}\label{eq:subgradient method iteration}
+x^{(k+1)} = x^{(k)} - \alpha_k g^{(k)}
 \end{equation}
-where \(g^{(k)}\) is any subgradient at the point \(x^{(k)}\). This formula can be seen to be very similar to gradient descent. In fact, can be observed that since the only subgradient at differentiable points is the gradient, all subgradient methods \textit{are} gradient descent in these sections, the only difference from regular gradient descent being our way of choosing step size. One notable difference from gradient descent is that subgradient methods are not descent methods; we are not guaranteed that every step will descend. For that reason we should have some method of tracking our best performing point.
+where \(g^{(k)}\) is any subgradient at the point \(x^{(k)}\) and \(\alpha_k > 0\). There are a number of different methods of choosing \(\alpha_k\), which will be further explored in Section \ref{sec:choosing step size}. This formula can be seen to be very similar to gradient descent. In fact, can be observed that since the only subgradient at differentiable points is the gradient, all subgradient methods \textit{are} gradient descent in these sections, the only difference from regular gradient descent being our way of choosing step size. One notable difference from gradient descent is that subgradient methods are not descent methods; we are not guaranteed that every step will descend. For that reason we should have some method of tracking our best performing point.
 \begin{equation}\label{eq:track best}
 f^{(k)}_{best} = \min (f^{(k-1)}_{best}, f(x^{(k)}))
 \end{equation}
 And a corresponding \(i^{(k)}_{best}\) such that \(f(x^{(i^{(k)}_{best})}) = f^{(k)}_{best}\)
 This would not be needed in a descent method, because our best performing point is always the last point.
-\subsubsection{Choosing a Step Size}
-There are a few different methods of choosing the step size \(\alpha^{(k)}\)
-\begin{enumerate}
-    \item Constant step size: \(\alpha^{(k)} = \alpha\) for a fixed \(\alpha\), regardless of the value of \(k\).
-\end{enumerate}
+
+\subsubsection{Convergence Proof}
+We are focused on converging towards the optimum point within some error of margin. We begin by making the following assumptions
+\begin{itemize}
+    \item There exists a minimizer of \(f\) called \(x^*\), for which \(f^* = f(x^*)\)
+    \item There exists some bounding value \(G\) for which \(\|g\|_2 \leq G, g \in \partial f(x), \forall x \in \dom f\)\footnote{One way that this assumption can be met is if the function satisfies the Lipschitz condition, but it is not the only way}\footnote{This assumption helps us greatly in our analysis, but it is not strictly necessary. There exist subgradient methods which can be proven to work even when this assumption does not hold \cite{boydparksubgradients}}
+    \item There exists some known bounding value \(R\) such that \(R \geq \|x^{(1)}-x^*\|_2\)
+\end{itemize}
+Next we can write the following based on \eqref{eq:subgradient method iteration}
+\begin{equation}
+\|x^{(k+1)}-x^*\|^2_2 = \|x^{(k)} - \alpha_k g^{(k)}-x^*\|^2_2
+\end{equation}
+Focusing on the right side, we can multiply the quadratic out
+\begin{equation}
+\|x^{(k+1)}-x^*\|^2_2= \|x^{(k)}-x^*\|^2_2 - 2\alpha_k g^{(k)T}(x^{(k)}-x^*) + \alpha^2_k \|g^{(k)}\|^2_2
+\end{equation}
+Using the definition of subgradient from \eqref{eq:modified subradient def 2}, we can write
+\begin{equation}
+\|x^{(k+1)}-x^*\|^2_2 \leq \|x^{(k)}-x^*\|^2_2 - 2\alpha_k (f(x^{(k)})-f^*) + \alpha^2_k \|g^{(k)}\|^2_2
+\end{equation}
+Paying particular attention to the term \(\|x^{(k)}-x^*\|^2_2\), we can notice we have created a recursive inequality. If we perform a recursive substitution ultil reaching \(x^{(1)}\) we would find ourselves with the following inequality
+\begin{equation}
+\|x^{(k+1)}-x^*\|^2_2 \leq \|x^{(1)}-x^*\|^2_2 - 2\sum^k_{i=1}\alpha_i (f(x^{(i)})-f^*) + \sum^k_{i=1}\alpha^2_ki\|g^{(i)}\|^2_2
+\end{equation}
+We know that because of our bounding value \(R \geq \|x^{(1)}-x^*\|_2\) and because of the norm, \(\|x^{(k+1)}-x^*\|^2_2 \geq 0\), so we can write
+\begin{equation}
+    2\sum^k_{i=1}\alpha_i (f(x^{(i)})-f^*) \leq R^2  + \sum^k_{i=1}\alpha^2_ki\|g^{(i)}\|^2_2
+\end{equation}
+It follows readily from \eqref{eq:track best} that \(f^{(k)}_{best} \leq f(x^{(i)}) \forall 1 \leq i \leq k\), so we can say
+\begin{equation}
+    2\sum^k_{i=1}\alpha_i (f^{(k)}_{best}-f^*) \leq 2\sum^k_{i=1}\alpha_i (f(x^{(i)})-f^*) \leq R^2  + \sum^k_{i=1}\alpha^2_ki\|g^{(i)}\|^2_2
+\end{equation}
+And therefore
+\begin{equation}
+    f^{(k)}_{best}-f^* \leq \frac{R^2  + \sum^k_{i=1}\alpha^2_ki\|g^{(i)}\|^2_2}{2\sum^k_{i=1}\alpha_i}
+\end{equation}
+We can finish by applying our \(G\) bounding condition to \(\|g^{(k)}\|_2\), letting us write the final inequality
+\begin{equation}
+    f^{(k)}_{best}-f^* \leq \frac{R^2  + G^2 \sum^k_{i=1}\alpha^2_ki}{2\sum^k_{i=1}\alpha_i}
+\end{equation}
+Given that \(R\), \(G\), and \(\alpha_k\) are finite values, we can surmise that \(f^{(k)}_{best}\) approaches \(f^*\) within some small error bound that is dependent on \(\alpha_k\) and \(k\). It is evident from this that the means we use to choose \(\alpha_k\) will have significantly affect the error bound.
+
+\subsection{Choosing Step Size}\label{sec:choosing step size}
+There are many different methods of choosing the step size \(\alpha^{(k)}\). We will be discussing five broad categories in this section.
+
+The first is a constant step size, where for some constant \(\alpha > 0\)
+\begin{equation}\label{eq:constant step size}
+\alpha^{(k)} = \alpha
+\end{equation}
+
+Second is a constant step length, where for some constant \(\gamma > 0\)
+\begin{equation}\label{eq:constant step length}
+\alpha^{(k)} = \frac{\gamma}{\|g^{(k)}\|_2}
+\end{equation}
+It can be easily proven that for this step size, \(\|x^{(k+1)}-x^{(k)}\|_2 = \gamma\)
 
 \subsection{LASSO Regression}\label{sec:math lasso}
 
@@ -131,7 +186,7 @@ There are a few different methods of choosing the step size \(\alpha^{(k)}\)
 \section{Conclusion}\label{sec:conclusion}
 
 \appendix
-\subsection{Subgradient Properties}\label{sec:subgradient properties proofs}
+\subsection{Proving Subgradient Properties}\label{sec:subgradient properties proofs}
 \subsubsection{When the Function is Differentiable}
 We can begin by supposing that \(f\) is differentiable at \(x\), and therefore \(\nabla f(x)\) exists. Let us write a definition for each of its elements
 \begin{equation}\label{eq:gradient elementwise def}
@@ -154,29 +209,6 @@ If we are interested in trying an alternate \(g \neq \nabla f_i(x)\), we can say
 g_i(y_i-x_i) > \nabla f_i(x)(y_i-x_i)
 \end{equation}
 If \(g_i > \nabla f_i(x)\) and \(y_i > x_i\), this condition is fulfilled and therefore no values of \(g_i > \nabla f_i(x)\) are valid. Likewise, if \(g_i < \nabla f_i(x)\) and \(y_i < x_i\) this condition is fulfilled and therefore no values of \(g_i < \nabla f_i(x)\) are valid. Therefore the only valid values for every \(g_i = \nabla f_i(x)\), so the only valid \(g = \nabla f(x)\) if \(\nabla f(x)\) exists.
-
-
-\iffalse
-We can begin by supposing that \(f\) is differentiable at \(x\), and therefore \(\nabla f(x)\) exists. We can also remember that \(f(x)\) is convex, and therefore \(\forall \theta \in [0,1]\) and \(x, y \in \dom f\)
-\begin{equation}\label{eq:convexity def}
-f(\theta x + (1-\theta)y) \leq \theta f(x) + (1-\theta) f(y)
-\end{equation}
-Working from \eqref{eq:subgradient def}, if \(\nabla f(x)\) is a subgradient it must be true that \(\forall y \in \dom f\)
-\begin{equation}
-f(y) \geq f(x) + \nabla f(x)^T (y-x)
-\end{equation}
-If we take 
-\fi
-\iffalse
-We can algebraically find
-\begin{equation}
-\frac{f(y) - f(x)}{y-x} \geq \nabla f(x)
-\end{equation}
-We can remember the definition of the gradient using a limit
-\begin{equation}
-\nabla f(x) = \lim_{z \rightarrow x} \frac{f(z)-f(x)}{z-x}
-\end{equation}
-\fi
 
 \subsubsection{Global Minimum}
 If \(x^*\) is a global minimum it must be true that \(\forall y \in \dom f\)
