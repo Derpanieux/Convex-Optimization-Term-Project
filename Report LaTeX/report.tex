@@ -8,9 +8,15 @@
 \usepackage{enumitem}
 \usepackage{amssymb}
 \usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
 
-\DeclareMathOperator{\dom}{dom}
-\geometry{letterpaper, margin = 1in}
+\DeclareMathOperator{\dom}{\mathbf{dom}}
+\DeclareMathOperator{\best}{best}
+\DeclareMathOperator{\tr}{\mathbf{tr}}
+\DeclareMathOperator{\argmin}{argmin}
+\let\oldforall\forall
+\renewcommand{\forall}{ \, \oldforall \, }
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
@@ -21,7 +27,7 @@
 Subgradient Methods Applied to LASSO Regression
 }
 
-\author{\IEEEauthorblockN{Kasey Tian}
+\author{\IEEEauthorblockN{Kasey Tian}\\
 \IEEEauthorblockA{\textit{Electrical and Computer Engineering} \\
 \textit{Rutgers University}\\
 New Brunswick, NJ, USA \\
@@ -117,9 +123,9 @@ x^{(k+1)} = x^{(k)} - \alpha_k g^{(k)}
 \end{equation}
 where \(g^{(k)}\) is any subgradient at the point \(x^{(k)}\) and \(\alpha_k > 0\). There are a number of different methods of choosing \(\alpha_k\), which will be further explored in Section \ref{sec:choosing step size}. This formula can be seen to be very similar to gradient descent. In fact, can be observed that since the only subgradient at differentiable points is the gradient, all subgradient methods \textit{are} gradient descent in these sections, the only difference from regular gradient descent being our way of choosing step size. One notable difference from gradient descent is that subgradient methods are not descent methods; we are not guaranteed that every step will descend. For that reason we should have some method of tracking our best performing point.
 \begin{equation}\label{eq:track best}
-f^{(k)}_{best} = \min (f^{(k-1)}_{best}, f(x^{(k)}))
+f^{(k)}_{\best} = \min (f^{(k-1)}_{best}, f(x^{(k)}))
 \end{equation}
-And a corresponding \(i^{(k)}_{best}\) such that \(f(x^{(i^{(k)}_{best})}) = f^{(k)}_{best}\)
+And a corresponding \(i^{(k)}_{\best}\) such that \(f(x^{(i^{(k)}_{\best})}) = f^{(k)}_{\best}\)
 This would not be needed in a descent method, because our best performing point is always the last point.
 
 \subsubsection{Convergence Proof}
@@ -143,49 +149,247 @@ Using the definition of subgradient from \eqref{eq:modified subradient def 2}, w
 \end{equation}
 Paying particular attention to the term \(\|x^{(k)}-x^*\|^2_2\), we can notice we have created a recursive inequality. If we perform a recursive substitution ultil reaching \(x^{(1)}\) we would find ourselves with the following inequality
 \begin{equation}
-\|x^{(k+1)}-x^*\|^2_2 \leq \|x^{(1)}-x^*\|^2_2 - 2\sum^k_{i=1}\alpha_i (f(x^{(i)})-f^*) + \sum^k_{i=1}\alpha^2_ki\|g^{(i)}\|^2_2
+\|x^{(k+1)}-x^*\|^2_2 \leq \|x^{(1)}-x^*\|^2_2 - 2\sum^k_{i=1}\alpha_i (f(x^{(i)})-f^*) + \sum^k_{i=1}\alpha^2_i\|g^{(i)}\|^2_2
 \end{equation}
 We know that because of our bounding value \(R \geq \|x^{(1)}-x^*\|_2\) and because of the norm, \(\|x^{(k+1)}-x^*\|^2_2 \geq 0\), so we can write
 \begin{equation}
-    2\sum^k_{i=1}\alpha_i (f(x^{(i)})-f^*) \leq R^2  + \sum^k_{i=1}\alpha^2_ki\|g^{(i)}\|^2_2
+    2\sum^k_{i=1}\alpha_i (f(x^{(i)})-f^*) \leq R^2  + \sum^k_{i=1}\alpha^2_i\|g^{(i)}\|^2_2
 \end{equation}
-It follows readily from \eqref{eq:track best} that \(f^{(k)}_{best} \leq f(x^{(i)}) \forall 1 \leq i \leq k\), so we can say
+It follows readily from \eqref{eq:track best} that \(f^{(k)}_{\best} \leq f(x^{(i)}) \forall 1 \leq i \leq k\), so we can say
 \begin{equation}
-    2\sum^k_{i=1}\alpha_i (f^{(k)}_{best}-f^*) \leq 2\sum^k_{i=1}\alpha_i (f(x^{(i)})-f^*) \leq R^2  + \sum^k_{i=1}\alpha^2_ki\|g^{(i)}\|^2_2
+    2\sum^k_{i=1}\alpha_i (f^{(k)}_{\best}-f^*) \leq 2\sum^k_{i=1}\alpha_i (f(x^{(i)})-f^*) \leq R^2  + \sum^k_{i=1}\alpha^2_i\|g^{(i)}\|^2_2
 \end{equation}
 And therefore
-\begin{equation}
-    f^{(k)}_{best}-f^* \leq \frac{R^2  + \sum^k_{i=1}\alpha^2_ki\|g^{(i)}\|^2_2}{2\sum^k_{i=1}\alpha_i}
+\begin{equation}\label{eq:general bound}
+    f^{(k)}_{\best}-f^* \leq \frac{R^2  + \sum^k_{i=1}\alpha^2_i\|g^{(i)}\|^2_2}{2\sum^k_{i=1}\alpha_i}
 \end{equation}
 We can finish by applying our \(G\) bounding condition to \(\|g^{(k)}\|_2\), letting us write the final inequality
-\begin{equation}
-    f^{(k)}_{best}-f^* \leq \frac{R^2  + G^2 \sum^k_{i=1}\alpha^2_ki}{2\sum^k_{i=1}\alpha_i}
+\begin{equation}\label{eq:maximum bound}
+    f^{(k)}_{\best}-f^* \leq \frac{R^2  + G^2 \sum^k_{i=1}\alpha^2_i}{2\sum^k_{i=1}\alpha_i}
 \end{equation}
-Given that \(R\), \(G\), and \(\alpha_k\) are finite values, we can surmise that \(f^{(k)}_{best}\) approaches \(f^*\) within some small error bound that is dependent on \(\alpha_k\) and \(k\). It is evident from this that the means we use to choose \(\alpha_k\) will have significantly affect the error bound.
+Given that \(R\), \(G\), and \(\alpha_k\) are finite values, we can surmise that \(f^{(k)}_{\best}\) approaches \(f^*\) within some small error bound that is dependent on \(\alpha_k\) and \(k\). It is evident from this that the means we use to choose \(\alpha_k\) will have significantly affect the error bound.
 
 \subsection{Choosing Step Size}\label{sec:choosing step size}
-There are many different methods of choosing the step size \(\alpha^{(k)}\). We will be discussing five broad categories in this section.
+There are many different methods of choosing the step size \(\alpha^{(k)}\). We will be discussing five types in this section.
 
-The first is a constant step size, where for some constant \(\alpha > 0\)
+\subsubsection{Constant Step Size}\label{sec:constant step size}
+The first and simplest method we can use is a constant step size, where for some constant \(\alpha > 0\)
 \begin{equation}\label{eq:constant step size}
-\alpha^{(k)} = \alpha
+\alpha_{k} = \alpha
 \end{equation}
+Given this, we can substitute \eqref{eq:constant step size} into \eqref{eq:maximum bound} to obtain
+\begin{equation}\label{eq:constant step size bound}
+f^{(k)}_{\best}-f^* \leq \frac{R^2  + G^2 \alpha^2 k}{2\alpha k}
+\end{equation}
+To determine the converging behavior we can take a limit
+\begin{equation}\label{eq:constant step size convergence}
+\lim_{k \rightarrow \infty} \frac{R^2  + G^2 \alpha^2 k}{2\alpha k} = \frac{G^2 \alpha}{2}
+\end{equation}
+Therefore, we can surmise that we can reduce our eventual convergence bound by reducing \(\alpha\), although we should keep in mind that this comes at the expense of needing more steps. This is similar to the type of behavior we expect from other fixed step size methods.
 
+\subsubsection{Constant Step Length}\label{sec:constant step length}
 Second is a constant step length, where for some constant \(\gamma > 0\)
 \begin{equation}\label{eq:constant step length}
-\alpha^{(k)} = \frac{\gamma}{\|g^{(k)}\|_2}
+\alpha_k = \frac{\gamma}{\|g^{(k)}\|_2}
 \end{equation}
-It can be easily proven that for this step size, \(\|x^{(k+1)}-x^{(k)}\|_2 = \gamma\)
+It can be easily shown that for this step size, \(\|x^{(k+1)}-x^{(k)}\|_2 = \gamma\), hence the name constant step length. Because \(\|g^{(k)}\|_2 \leq G\), we can say that \(\alpha_k \geq \gamma/G\), which enables us to use \eqref{eq:general bound} to write
+\begin{equation}\label{eq:constant step length bound}
+f^{(k)}_{\best}-f^* \leq \frac{R^2  + \gamma^2 k}{2\sum^k_{i=1}\alpha_i} \leq \frac{R^2  + \gamma^2 k}{2\gamma k / G}
+\end{equation}
+We can once more apply a limit to determine converging behavior
+\begin{equation}\label{eq:constant step length convergence}
+\lim_{k \rightarrow \infty} \frac{R^2  + \gamma^2 k}{2\gamma k / G} = \frac{G \gamma}{2}
+\end{equation}
+
+\subsubsection{Square Summable But Not Summable}\label{sec:square summable not summable}
+This is a broad family of step size choosing methods, so long as the following are true
+\begin{equation}\label{eq:square summable not summable}
+\alpha_k \geq 0, \|\alpha\|^2_2= \sum_{k=1}^{\infty} \alpha_k^2 < \infty, \sum_{k=1}^{\infty} \alpha_k = \infty
+\end{equation}
+Which, as the name implies, means that the squares are summable to a finite value but the values themselves are not. One typical example of this is \(\alpha_k = a/(b+k)\) for some \(a > 0\) and \(b \geq 0\). Combining \eqref{eq:maximum bound} and \eqref{eq:square summable not summable}, we can derive
+\begin{equation}\label{eq:square summable not summable bound}
+f^{(k)}_{\best}-f^* \leq \frac{R^2  + G^2 \|\alpha\|_2^2}{2\sum^k_{i=1}\alpha_i}
+\end{equation}
+And once again using a limit to get the converging behavior
+\begin{equation}\label{eq:square summable not summable convergence}
+\lim_{k \rightarrow \infty} \frac{R^2  + G^2 \|\alpha\|_2^2}{2 \sum^k_{i=1}\alpha_i} = \frac{R^2  + G^2 \|\alpha\|_2^2}{\infty} = 0
+\end{equation}
+Because \(R^2 + G^2\|\alpha\|^2_2 < \infty\). Therefore \(f^{(\infty)}_{\best} \rightarrow f^*\), with no additional gap between them.
+
+\subsubsection{Nonsummable Diminishing Step Size}\label{sec:nonsummable diminishing step size}
+This is another broad family of step size choosing methods, where our criteria are as follows
+\begin{equation}\label{eq:nonsummable diminishing step size}
+\alpha_k \geq 0, \lim_{k \rightarrow \infty} \alpha_k = 0, \sum_{k=1}^{\infty} \alpha_k = \infty
+\end{equation}
+As the name suggests, the step sizes eventually diminish to zero and the sum of all of the step sizes does not exist. One typical example is \(\alpha_k = a/\sqrt{k}\) for some \(a > 0\). Using \eqref{eq:maximum bound} with \eqref{eq:nonsummable diminishing step size} and taking limit, we find that the right hand size converges to zero because of the nonsummable denominator
+\begin{equation}\label{eq:nonsummable diminishing step size convergence}
+\lim_{k \rightarrow \infty} \frac{R^2  + G^2 \sum^k_{i=1}\alpha^2_i}{2\sum^k_{i=1}\alpha_i} = \frac{R^2  + G^2 \sum^k_{i=1}\alpha^2_i}{\infty} = 0
+\end{equation}
+Therefore this type of method also guarantees the eventual convergence \(f^{(\infty)}_{\best} \rightarrow f^*\), with no gap between them.
+
+\subsubsection{Nonsummable Diminishing Step Length}\label{sec:nonsummable diminishing step length}
+Our final category of subgradient method is a step length method, similar to Section \ref{sec:constant step length} in that we take the form \(\alpha_k = \gamma_k / \|g^{(k)}\|_2\). Note that there is no longer a singular, constant variable \(\gamma\), and instead we have a variable \(\gamma_k\). These \(\gamma_k\) must fulfill the following critera
+\begin{equation}\label{eq:nonsummable diminishing step length}
+\gamma_k \geq 0, \lim_{k \rightarrow \infty} \gamma_k = 0, \sum_{k=1}^{\infty} \gamma_k = \infty
+\end{equation}
 
 \subsection{LASSO Regression}\label{sec:math lasso}
 
-\section{Code Implementation}\label{sec:code}
+\section{Simple Linear Example}\label{sec:linear example}
+\subsection{Linear Function}\label{sec:linear math}
+To gain familiarity with subgradient methods, we can first implement a simple example of a linear piecewise function. This function is defined such that the objective function can be described as
+\begin{equation}\label{eq:linear example equation}
+f(x) = \max(A x + b)
+\end{equation}
+Where \(A \in \mathbb{R}^{m \times n}\), \(b_i \in \mathbb{R}^m\), and \(\max\) picks the maximum value of of a vector. This function will have discontinuities where these linear functions meet. Also, being a pointwise maxiumum of a series of linear functions, this function will be convex. These traits together make this a suitable problem to practice subgradient methods on. In order to calculate a subgradient at a point \(x\), we can find one of the constitutent functions that produces the maximum value and then its gradient will be \(a_i\).
+\subsection{Source Code}\label{sec:linear code}
+Python was chosen to write a program to simulate this problem and solve it with an example of each of the 5 types of step size choice. It is broken into sections in this report and reformatted from its original source, but the original source code can be found along with all of the original files. See Appendix \ref{sec:github}.
+
+\subsubsection{Defining the problem}
+First we must define the dimensions of this problem \(n=10, m = 25\). Each of the linear equations was generated randomly using unit normal distrubutions, and by using enough seperate linear equations it was highly unlikely that the problem would end up unbounded below (During the testing this was an issue that was encountered).
+\begin{minted}{python}
+#dimensions
+n = 10
+m = 25
+#generate problem
+a = np.random.normal(size=(m, n))
+b = np.random.normal(size=m)
+\end{minted}
+Next are the methods to determine the function value at a point and a subgradient at a point using the methods discussed in Section \ref{sec:linear math}
+\begin{minted}{python}
+def f(x):
+    values = np.matvec(a, x) + b
+    return np.max(values)
+def g(x):
+    values = np.matvec(a, x) + b
+    return a[np.argmax(values)]
+\end{minted}
+
+\subsection{Step Sizes}
+To use each of the five different types of step sizes, they were all implemented in their own methods. Where there was a typical example listed for a category, that example was used. In the case of nonsummable diminishing step lengths, there was no typical example provided in \cite{boydparksubgradients}, so a step length version of the nonsummable diminishing step size was used. It fulfills the criteria in \eqref{eq:nonsummable diminishing step length}, and so is a valid representative of this type of method.
+\begin{minted}{python}
+#step sizes
+def constant_step_size(g, k):
+    alpha = 0.01
+    return alpha
+def constant_step_len(g, k):
+    gamma = 0.01
+    norm = np.linalg.vector_norm(g)
+    return gamma/norm
+def square_sum_not_sum(g, k):
+    a = 1
+    b = 1
+    return a/(b+k)
+def nonsum_dim_size(g, k):
+    a = 0.11
+    return a / math.sqrt(k)
+def nonsum_dim_len(g,k):
+    a = 0.1
+    gammak = a / math.sqrt(k)
+    norm = np.linalg.vector_norm(g)
+    return gammak/norm
+\end{minted}
+
+\subsection{Subgradient Method}
+This method uses whichever step size function is provided to execute a fixed number of steps, starting at the starting location.
+\begin{minted}{python}
+def sgmethod(f, g, x0, step, maxiter):
+    xkvec = [x0]
+    xbest = x0
+    for k in range(1,maxiter+1):
+        xk = xkvec[-1]
+        subgradient = g(xk)
+        alphak = step(subgradient, k)
+        xnext = xk - alphak*subgradient
+        #keep track of best
+        if f(xnext) < f(xbest):
+            xbest = xnext
+        xkvec.append(xnext)
+    print(f"Finished. f* = {f(xbest):.5f}")
+    return xkvec, xbest
+\end{minted}
+
+\subsection{Graphing}
+This final section of code calls the other methods, stores the appropriate data, and then generates the figures. Since the methods we are using do not guarantee finding the optimal \(f^*\) in a finite amount of time, the best value out of all of the values from all of the methods is taken as \(f^*\).
+\begin{minted}{python}
+x0 = np.zeros(n)
+maxiter = 100
+fstar = math.inf
+def format(name, step):
+    global fstar
+    xkvec, xbest = sgmethod(f, g, x0, step, maxiter)
+    thisbest = f(xbest)
+    if thisbest < fstar:
+        fstar = thisbest
+    fkvec = [f(xk) for xk in xkvec]
+    sgvec = [np.linalg.vector_norm(g(xk)) for xk in xkvec]
+    return name, xkvec, fkvec, sgvec
+
+formatted = []
+formatted.append(format("Constant Size", constant_step_size))
+formatted.append(format("Constant Length", constant_step_len))
+formatted.append(format("Sq. Sum. not Sum.", square_sum_not_sum))
+formatted.append(format("Nonsum. Dim. Size", nonsum_dim_size))
+formatted.append(format("Nonsum. Dim. Length", nonsum_dim_len))
+
+karr = [k for k in range(0,maxiter+1)]
+fig, ax = plt.subplots()
+ax.set_title("Value gap of $f(x^{(k)}) - f^*$ against $k$")
+ax.set_ylabel("$f(x^{(k)}) - f^*$")
+ax.set_xlabel("$k$")
+ax.set_yscale('log')
+for entry in formatted:
+    gapvec = entry[2] - fstar
+    ax.plot(karr, gapvec, label=entry[0])
+ax.legend()
+
+fig2, ax2 = plt.subplots()
+ax2.set_title("$\|g^{(k)}\|_2$ against $k$ with " + entry[0])
+ax2.set_ylabel("$\|g^{(k)}\|_2$")
+ax2.set_xlabel("$k$")
+ax2.set_yscale('log')
+for entry in formatted:
+    ax2.plot(karr, entry[3], label=entry[0])
+ax2.legend()
+
+plt.show()
+\end{minted}
+
+\subsection{Figures}
+The two figures generated are Fig. \ref{fig:linear value gap} and \ref{fig:linear sg norm}. We can make a few interesting observations that are congruent with what we have previously derived.
+\begin{enumerate}
+    \item It is clear that none of these methods are descent methods, because they all increase at one point or another
+    \item Our last point is often not the most optimal point for a particular subgradient method
+\end{enumerate}
+Additionally, we can note that at all points on all functions our subgradient normalized stuck to a few different magnitudes. It stands to reason that there would be exactly 25 such magnitues, each corresponding to one of our linear functions.
+\begin{figure}[tbp]
+    \centering
+    \begin{subfigure}{0.49\textwidth}
+        \centering
+        \includegraphics[width = \linewidth]{Figures/Linear Example Value Gap.pdf}
+        \caption{Value gap plot}
+        \label{fig:linear value gap}
+    \end{subfigure}
+    \begin{subfigure}{0.49\textwidth}
+        \centering
+        \includegraphics[width = \linewidth]{Figures/Linear Example Subgradient Norm.pdf}
+        \caption{Norm subgradient plot}
+        \label{fig:linear sg norm}
+    \end{subfigure}
+    \caption{Plots for the linear problem}
+    \label{fig:gd}
+\end{figure}
+
+
+\section{LASSO Implementation}\label{sec:lasso}
 
 \section{Numerical Results}\label{sec:results}
 
 \section{Conclusion}\label{sec:conclusion}
 
 \appendix
+\subsection{Source Code Availablility}\label{sec:github}
+The source code for this project, including the code for this \LaTeX document, is available on GitHub: \url{https://github.com/Derpanieux/Convex-Optimization-Term-Project}.
 \subsection{Proving Subgradient Properties}\label{sec:subgradient properties proofs}
 \subsubsection{When the Function is Differentiable}
 We can begin by supposing that \(f\) is differentiable at \(x\), and therefore \(\nabla f(x)\) exists. Let us write a definition for each of its elements
