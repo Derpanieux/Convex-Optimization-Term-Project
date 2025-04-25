@@ -91,7 +91,7 @@ for entry in formatted:
 ax.legend()
 
 fig2, ax2 = plt.subplots()
-ax2.set_title("$\|g^{(k)}\|_2$ against $k$ with " + entry[0])
+ax2.set_title("$\|g^{(k)}\|_2$ against $k$")
 ax2.set_ylabel("$\|g^{(k)}\|_2$")
 ax2.set_xlabel("$k$")
 ax2.set_yscale('log')
