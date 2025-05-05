@@ -140,6 +140,7 @@ We are focused on converging towards the optimum point within some error of marg
     \item There exists some bounding value \(G\) for which \(\|g\|_2 \leq G, \forall g \in \partial f(x), \forall x \in \dom f\)\footnote{One way that this assumption can be met is if the function satisfies the Lipschitz condition, but it is not the only way}\footnote{This assumption helps us greatly in our analysis, but it is not strictly necessary. There exist subgradient methods which can be proven to work even when this assumption does not hold \cite{boydparksubgradients}}
     \item There exists some known bounding value \(R\) such that \(R \geq \|x^{(1)}-x^*\|_2\)
 \end{itemize}
+
 Next we can write the following based on \eqref{eq:subgradient method iteration}
 \begin{equation}
 \|x^{(k+1)}-x^*\|^2_2 = \|x^{(k)} - \alpha_k g^{(k)}-x^*\|^2_2
